@@ -1,0 +1,5 @@
+{
+  "verbose": false,
+  "watch": ["./main.js"],
+  "exec": "node main.js"
+}
