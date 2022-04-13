@@ -6,7 +6,7 @@ const list = async (req, res) => {
         const count = await Mews.count()
         return res.status(200).json({ mewslist, count })
     } catch (error) {
-        return res.status(400).json({ error })
+        return res.status(400).json(error)
     }
 }
 
@@ -62,7 +62,7 @@ const update = async (req, res) => {
         await updatedmews.save()
         return res.status(202).json(updatedmews)
     } catch (error) {
-        return res.status(400).json({ error: 'idkman' })
+        return res.status(400).json(error)
     }
 }
 
