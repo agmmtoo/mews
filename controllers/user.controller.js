@@ -14,6 +14,12 @@ const create = async (req, res) => {
     try {
         // only need 'username' and 'password' fields
         const { username, password } = req.body
+
+        // username exists?
+        const user = await User.findOne({ username })
+        if (user) return res.status(409).json({ message: 'Username is taken' })
+
+        // ok, no duplicate
         const newuser = await new User({ username, password })
         await newuser.save()
         return res.status(201).json({ message: 'Successfully created', user: newuser })
