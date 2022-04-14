@@ -23,7 +23,8 @@ router.param('mewsId', mewsController.mewsById)
 router.route('/:mewsId')
     .get(mewsController.read)
     // editing mews requires a sign in, authorized owner
-    .put(authController.requiredSignin, mewsController.update)
-    .delete(mewsController.destroy)
+    .put(authController.requiredSignin, mewsController.requiredOwnership, mewsController.update)
+    // same for deleting
+    .delete(authController.requiredSignin, mewsController.requiredOwnership, mewsController.destroy)
 
 export default router

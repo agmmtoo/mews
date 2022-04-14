@@ -10,7 +10,7 @@ const router = express.Router()
 // note - POST is in auth router, since it's SIGNUP
 // note - "requiredSignin"
 router.route('/')
-    .get(authController.requiredSignin, userController.list)
+    .get(userController.list)
 
 router.route('/profile')
     .get(authController.requiredSignin, userController.profile)
@@ -24,6 +24,6 @@ router.route('/:userId')
     .get(userController.read)
     // to edit profile, one need to sign in and authorized (same id)
     .put(authController.requiredSignin, authController.requiredAuthorization, userController.update)
-    .delete(userController.destroy)
+// .delete(userController.destroy)
 
 export default router

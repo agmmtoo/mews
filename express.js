@@ -4,6 +4,9 @@ import cors from 'cors'
 import helmet from 'helmet'
 import compression from 'compression'
 
+// error handler
+import error from './error-handler.js'
+
 // routes
 import mewsRouter from './routes/mews.router.js'
 import userRouter from './routes/user.router.js'
@@ -26,5 +29,7 @@ app.use('/api/v1/auth', authRouter)
 app.get('/', async (req, res) => {
     res.status(418).send('*confuse*')
 })
+
+app.use(error)
 
 export default app

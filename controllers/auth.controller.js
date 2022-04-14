@@ -46,7 +46,7 @@ const requiredAuthorization = async (req, res, next) => {
         // since objects are compared, use != and not !==
         if (idFromRouteParam != idFromToken) return res.status(401).json({ message: '"You can change only yourself!"' })
 
-        // ownershif verified
+        // ownership verified
         next()
     } catch (error) {
         return res.status(400).json({ message: 'Error occured checking ownership', error })

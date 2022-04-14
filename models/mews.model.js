@@ -8,6 +8,11 @@ const MewsSchema = new mongoose.Schema({
     link: {
         type: String,
         required: 'Link is required'
+    },
+    submitter: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: 'No submitter?'
     }
 }, { timestamps: true })
 
