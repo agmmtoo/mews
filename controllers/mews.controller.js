@@ -1,13 +1,26 @@
 import Mews from '../models/mews.model.js'
+import Comment from '../models/comment.model.js'
 
 const list = async (req, res) => {
     try {
-        const mewslist = await Mews.find()
+        const _mewslist = await Mews.find()
             // sort by latest added
             .sort({ createdAt: -1 })
             // exclude updatedAt and versin fields
             .select('-updatedAt -__v')
             .populate('submitter', '_id username')
+
+        // add comments count in each Mews
+        // NO ELEGENCE AT ALL
+        // note: Promise.all --> since map function returns Promise list
+        const mewslist = await Promise.all(_mewslist.map(async mews => {
+            // somehow actual obj is stored in _doc attr (check by destruct)
+            // count total comment in specificed Mews
+            mews._doc.comments = await Comment.find({ mews: mews._id }).count()
+            return mews
+        }))
+
+        // count total Mews
         const count = await Mews.count()
         return res.status(200).json({ mewslist, count })
     } catch (error) {
@@ -23,7 +36,7 @@ const create = async (req, res) => {
         const submitter = req.auth._id
         const newmews = new Mews({ title, link, submitter })
         await newmews.save()
-        return res.status(201).json(newmews)
+        return res.status(201).json({ message: "Successfully submitted new Mews", newmews })
     } catch (error) {
         return res.status(400).json(error)
     }
@@ -50,7 +63,7 @@ const read = async (req, res) => {
         // mews with requested id is attached
         // to req obj by router param method: mewsById
         const mews = req.mews
-        return res.status(200).json(mews)
+        return res.status(200).json({ mews })
     } catch (error) {
         // db error
         return res.status(400).json(error)
