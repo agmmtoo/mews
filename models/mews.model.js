@@ -17,7 +17,8 @@ const MewsSchema = new mongoose.Schema({
     boosters: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
-    }]
+    }],
+    points: Number
 }, { timestamps: true })
 
 export default mongoose.model('Mews', MewsSchema)

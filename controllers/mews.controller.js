@@ -1,11 +1,12 @@
 import Mews from '../models/mews.model.js'
 import Comment from '../models/comment.model.js'
+import User from '../models/user.model.js'
 
 const list = async (req, res) => {
     try {
         const _mewslist = await Mews.find()
             // sort by latest added
-            .sort({ createdAt: -1 })
+            .sort({ points: -1, createdAt: -1 })
             // exclude updatedAt and versin fields
             .select('-updatedAt -__v')
             .populate('submitter', '_id username')
@@ -36,6 +37,8 @@ const create = async (req, res) => {
         const submitter = req.auth._id
         const newmews = new Mews({ title, link, submitter })
         await newmews.save()
+        // increase karma point
+        await User.findByIdAndUpdate(submitter, { $inc: { karma: 5 } }, { timestamps: false })
         return res.status(201).json({ message: "Successfully submitted new Mews", newmews })
     } catch (error) {
         return res.status(400).json(error)
@@ -107,7 +110,13 @@ const boost = async (req, res) => {
         const mews = req.mews
         // check if user already had boosted
         if (req.mews.boosters.indexOf(req.auth._id) !== -1) return res.status(200).json({ message: 'You already boosted once tho' })
-        const boostedmews = await Mews.findByIdAndUpdate(mews._id, { $push: { boosters: req.auth._id } }, { new: true, timestamps: false })
+        // push booster
+        await Mews.findByIdAndUpdate(mews._id, { $push: { boosters: req.auth._id } }, { timestamps: false })
+        // increase point
+        const boostedmews = await Mews.findByIdAndUpdate(mews._id, { $inc: { points: 1 } }, { new: true, timestamps: false })
+        // increase submittor's karma
+        await User.findByIdAndUpdate(mews.submitter._id, { $inc: { karma: 1 } }, { timestamps: false })
+
         return res.status(200).json({ message: 'Boost success', mews: boostedmews })
     } catch (error) {
         return res.status(400).json({ message: 'Boost failed', error })
@@ -119,7 +128,17 @@ const unboost = async (req, res) => {
         const mews = req.mews
         // check if user already had boosted
         if (req.mews.boosters.indexOf(req.auth._id) === -1) return res.status(200).json({ message: 'You didn\'t even boosted tho' })
-        const unboostedmews = await Mews.findByIdAndUpdate(mews._id, { $pull: { boosters: req.auth._id } }, { new: true, timestamps: false })
+
+        // pull booster
+        await Mews.findByIdAndUpdate(mews._id, { $pull: { boosters: req.auth._id } }, { timestamps: false })
+        // decreast point
+        const unboostedmews = await Mews.findByIdAndUpdate(mews._id, { $inc: { points: -1 } }, { new: true, timestamps: false })
+        // decrease submittor's karma
+        await User.findByIdAndUpdate(mews.submitter._id, { $inc: { karma: -1 } }, { timestamps: false })
+
+        // increase submittor's karma
+        await User.findByIdAndUpdate(mews.submitter._id, { $inc: { karma: -1 } }, { timestamps: false })
+
         return res.status(200).json({ message: 'Unboost success', mews: unboostedmews })
     } catch (error) {
         return res.status(400).json({ message: 'Unboost failed', error })
