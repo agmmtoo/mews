@@ -1,115 +1,146 @@
 import Mews from '../models/mews.model.js'
-import Comment from '../models/comment.model.js'
 import User from '../models/user.model.js'
 
+// GET
 const list = async (req, res) => {
     try {
-        const _mewslist = await Mews.find()
+        // req queries
+        // no "?parent=:parentId" query --> no-parent mews
+        let {
+            parent = { '$exists': false },
+            daysago,
+            rank
+        } = req.query
+        // no "?daysago=Number" query --> all (createdAt exists)
+        let createdAt = daysago
+            ? { '$gte': new Date(new Date - daysago * 24 * 60 * 60 * 1000) }
+            : { '$exists': true }
+        // no "?rank=value" query --> ordered by createdAt desc
+        let sort = rank ? { points: -1 } : undefined
+
+        const mewslist = await Mews
+            // filter Mews with set conditions
+            .find({ parent, createdAt })
+            // sort by points
+            .sort(sort)
             // sort by latest added
-            .sort({ points: -1, createdAt: -1 })
-            // exclude updatedAt and versin fields
-            .select('-updatedAt -__v')
+            .sort({ createdAt: -1 })
             .populate('submitter', '_id username')
 
-        // add comments count in each Mews
-        // NO ELEGENCE AT ALL
-        // note: Promise.all --> since map function returns Promise list
-        const mewslist = await Promise.all(_mewslist.map(async mews => {
-            // somehow actual obj is stored in _doc attr (check by destruct)
-            // count total comment in specificed Mews
-            mews._doc.comments = await Comment.find({ mews: mews._id }).count()
-            return mews
-        }))
-
         // count total Mews
-        const count = await Mews.count()
-        return res.status(200).json({ mewslist, count })
+        const total = await Mews.countDocuments({ parent, createdAt })
+        return res.status(200).json({ mews: mewslist, total })
     } catch (error) {
-        return res.status(400).json(error)
+        return res.status(400).json({ message: 'error getting mews list', error })
     }
 }
 
+// POST
 const create = async (req, res) => {
     try {
-        // only 'title' and 'link' fields are requested here
-        const { title, link } = req.body
-        // POST to mews required sign in, express-js' auth field is present
+        // user id from express-js contoller middleware
         const submitter = req.auth._id
-        const newmews = new Mews({ title, link, submitter })
-        await newmews.save()
+
+        // submitter here takes submitter's "_id"
+        // parent is supposed to be "_id" too
+        // note: "_id" is converted to related when populate obj by mongoose, i guess
+        const { title, link, body, parent } = req.body
+        const mews = await new Mews({ submitter, title, link, body, parent })
+
+        // if parent mews is present -
+        if (parent) {
+            // push to parent's children array
+            const parentMews = await Mews.findByIdAndUpdate(parent, { $push: { children: mews } }, { new: true, timestamps: false })
+            // mews' ancestor is same as parent's, plus parent's parent
+            if (parentMews.parent) {
+                // [great-great-grand, great-grand, grand]
+                mews.ancestors = parentMews.ancestors
+                mews.ancestors.push(parentMews.parent)
+            }
+        }
+        await mews.save()
+
         // increase karma point
-        await User.findByIdAndUpdate(submitter, { $inc: { karma: 5 } }, { timestamps: false })
-        return res.status(201).json({ message: "Successfully submitted new Mews", newmews })
+        await User.findByIdAndUpdate(submitter, { $inc: { karma: 1 } }, { timestamps: false })
+
+        return res.status(201).json({ message: 'submitted', mews })
     } catch (error) {
-        return res.status(400).json(error)
+        return res.status(400).json({ message: `submit failed`, error })
     }
 }
 
-// following controller is called on routes with :id param
+// controller is called on mews.router with :mewsId param
 const mewsById = async (req, res, next, id) => {
     try {
         // get id from route param, router.param
-        const mews = await Mews.findById(id).select('-__v')
+        const mews = await Mews.findById(id)
+            .populate('submitter', '_id username')
         // can't find
-        if (!mews) return res.status(404).json({ error: `Unable to load Mews with id ${id}` })
+        // returning 404 when comment is empty is WRONG, let client handle it
+        // if (!mews) return res.status(404).json({ error: `can't load Mews ${id}` })
         // attach to req
         req.mews = mews
         // proceed further
         next()
     } catch (error) {
-        return res.status(400).json({ message: `Mews with id ${id} dostn't exist`, error })
+        return res.status(400).json({ message: `no mews with id ${id}`, error })
     }
 }
 
+// GET :mewsId
 const read = async (req, res) => {
     try {
-        // mews with requested id is attached
-        // to req obj by router param method: mewsById
+        // :mewsId is attached to req obj by router param method "mewsById"
         const mews = req.mews
         return res.status(200).json({ mews })
     } catch (error) {
         // db error
-        return res.status(400).json(error)
+        return res.status(400).json({ message: 'error getting mews from req obj', error })
     }
 }
 
+// PUT :mewsId
 const update = async (req, res) => {
     try {
-        const { title, link } = req.body
-        // const mews = { ...req.mews, title: title, link: link }
+        const { title, link, body } = req.body
         // error if destruct with es6
         const updatedmews = req.mews
+
         updatedmews.title = title
         updatedmews.link = link
+        updatedmews.body = body
+
         await updatedmews.save()
-        return res.status(202).json({ message: 'Successfully updated', updatedmews })
+        return res.status(202).json({ message: 'updated', updatedmews })
     } catch (error) {
-        return res.status(400).json(error)
+        return res.status(400).json({ message: 'update failed', error })
     }
 }
 
+// DELETE :mewsId
 const destroy = async (req, res) => {
     try {
         const mews = req.mews
+        if (mews.parent) {
+            // error if pull "comment" and not "comment._id"
+            await Mews.findByIdAndUpdate(mews.parent, { $pull: { children: mews._id } }, { timestamps: false })
+        }
         await mews.remove()
-        return res.status(200).json({ message: 'Mews deleted successfully' })
+
+        // reduce submitter/owner's karma //might be error !!!!!!!!!!
+        await User.findByIdAndUpdate(req.mews.submitter, { $inc: { karma: -1 } }, { timestamps: false })
+        return res.status(200).json({ message: 'deleted' })
     } catch (error) {
-        return res.status(400).json({ message: 'Error deleting Mews', error })
+        return res.status(400).json({ message: 'delete failed', error })
     }
 }
 
-const requiredOwnership = async (req, res, next) => {
-    // requiredSignin --> req.auth._id
-    // mewsById --> req.mews
-    if (req.auth._id != req.mews.submitter) return res.status(401).json({ message: `You don't own this Mews` })
-    next()
-}
-
+// PUT :mewsId
 const boost = async (req, res) => {
     try {
         const mews = req.mews
         // check if user already had boosted
-        if (req.mews.boosters.indexOf(req.auth._id) !== -1) return res.status(200).json({ message: 'You already boosted once tho' })
+        if (req.mews.boosters.indexOf(req.auth._id) !== -1) return res.status(200).json({ message: 'already boosted tho' })
         // push booster
         await Mews.findByIdAndUpdate(mews._id, { $push: { boosters: req.auth._id } }, { timestamps: false })
         // increase point
@@ -117,9 +148,9 @@ const boost = async (req, res) => {
         // increase submittor's karma
         await User.findByIdAndUpdate(mews.submitter._id, { $inc: { karma: 1 } }, { timestamps: false })
 
-        return res.status(200).json({ message: 'Boost success', mews: boostedmews })
+        return res.status(200).json({ message: 'boosted', mews: boostedmews })
     } catch (error) {
-        return res.status(400).json({ message: 'Boost failed', error })
+        return res.status(400).json({ message: 'boost failed', error })
     }
 }
 
@@ -136,13 +167,9 @@ const unboost = async (req, res) => {
         // decrease submittor's karma
         await User.findByIdAndUpdate(mews.submitter._id, { $inc: { karma: -1 } }, { timestamps: false })
 
-        // increase submittor's karma
-        await User.findByIdAndUpdate(mews.submitter._id, { $inc: { karma: -1 } }, { timestamps: false })
-
-        return res.status(200).json({ message: 'Unboost success', mews: unboostedmews })
+        return res.status(200).json({ message: 'unboosted', mews: unboostedmews })
     } catch (error) {
-        return res.status(400).json({ message: 'Unboost failed', error })
+        return res.status(400).json({ message: 'unboost failed', error })
     }
 }
-
-export default { list, create, mewsById, read, update, destroy, requiredOwnership, boost, unboost }
+export default { list, create, mewsById, read, update, destroy, boost, unboost }

@@ -11,7 +11,7 @@ import error from './error-handler.js'
 import mewsRouter from './routes/mews.router.js'
 import userRouter from './routes/user.router.js'
 import authRouter from './routes/auth.router.js'
-import commentRouter from './routes/comment.router.js'
+// import commentRouter from './routes/comment.router.js'
 
 const app = express()
 
@@ -26,7 +26,7 @@ app.use(compression())
 app.use('/api/v1/mews', mewsRouter)
 app.use('/api/v1/users', userRouter)
 app.use('/api/v1/auth', authRouter)
-app.use('/api/v1/comments', commentRouter)
+// app.use('/api/v1/comments', commentRouter)
 
 app.get('/', async (req, res) => {
     res.status(418).send('*confuse*')

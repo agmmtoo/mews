@@ -24,6 +24,6 @@ router.route('/:userId')
     .get(userController.read)
     // to edit profile, one need to sign in and authorized (same id)
     .put(authController.requiredSignin, authController.requiredAuthorization, userController.update)
-// .delete(userController.destroy)
+    .delete(authController.requiredSignin, authController.requiredAuthorization, userController.destroy)
 
 export default router

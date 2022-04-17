@@ -24,7 +24,10 @@ const UserSchema = new mongoose.Schema({
         required: 'Hashed password is, somehow.. missing'
     },
     about: String,
-    karma: Number
+    karma: {
+        type: Number,
+        default: 0
+    }
 }, { timestamps: true })
 
 UserSchema

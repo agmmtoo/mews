@@ -44,7 +44,7 @@ const requiredAuthorization = async (req, res, next) => {
         const idFromRouteParam = req.user._id
 
         // since objects are compared, use != and not !==
-        if (idFromRouteParam != idFromToken) return res.status(401).json({ message: '"You can change only yourself!"' })
+        if (idFromRouteParam != idFromToken) return res.status(401).json({ message: '"Only you can change yourself!"' })
 
         // ownership verified
         next()
@@ -54,4 +54,11 @@ const requiredAuthorization = async (req, res, next) => {
 
 }
 
-export default { signin, requiredSignin, requiredAuthorization }
+const requiredOwnership = async (req, res, next) => {
+    // requiredSignin --> req.auth._id
+    // mewsById --> req.mews
+    if (req.auth._id != req.mews.submitter._id) return res.status(401).json({ message: `you don't own this Mews` })
+    next()
+}
+
+export default { signin, requiredSignin, requiredAuthorization, requiredOwnership }

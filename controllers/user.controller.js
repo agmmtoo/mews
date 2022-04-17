@@ -67,9 +67,9 @@ const destroy = async (req, res) => {
     try {
         const user = req.user
         await user.remove()
-        return res.status(200).json({ message: 'Successfully deleted', user })
+        return res.status(200).json({ message: 'deleted', user })
     } catch (error) {
-        return res.status(400).json({ message: 'Error deleting user', error })
+        return res.status(400).json({ message: 'delete failed', error })
     }
 }
 

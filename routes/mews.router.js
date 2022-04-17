@@ -23,9 +23,9 @@ router.param('mewsId', mewsController.mewsById)
 router.route('/:mewsId')
     .get(mewsController.read)
     // editing mews requires a sign in, authorized owner
-    .put(authController.requiredSignin, mewsController.requiredOwnership, mewsController.update)
+    .put(authController.requiredSignin, authController.requiredOwnership, mewsController.update)
     // same for deleting
-    .delete(authController.requiredSignin, mewsController.requiredOwnership, mewsController.destroy)
+    .delete(authController.requiredSignin, authController.requiredOwnership, mewsController.destroy)
 
 // path: /api/v1/mews/r4nd0m1dh3r3/boost
 // methods: PUT
