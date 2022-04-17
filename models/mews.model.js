@@ -13,7 +13,11 @@ const MewsSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: 'No submitter?'
-    }
+    },
+    boosters: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }]
 }, { timestamps: true })
 
 export default mongoose.model('Mews', MewsSchema)

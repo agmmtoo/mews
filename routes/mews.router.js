@@ -27,4 +27,12 @@ router.route('/:mewsId')
     // same for deleting
     .delete(authController.requiredSignin, mewsController.requiredOwnership, mewsController.destroy)
 
+// path: /api/v1/mews/r4nd0m1dh3r3/boost
+// methods: PUT
+router.route('/:mewsId/boost')
+    .put(authController.requiredSignin, mewsController.boost)
+
+router.route('/:mewsId/unboost')
+    .put(authController.requiredSignin, mewsController.unboost)
+
 export default router

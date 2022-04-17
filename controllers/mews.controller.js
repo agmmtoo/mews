@@ -102,4 +102,28 @@ const requiredOwnership = async (req, res, next) => {
     next()
 }
 
-export default { list, create, mewsById, read, update, destroy, requiredOwnership }
+const boost = async (req, res) => {
+    try {
+        const mews = req.mews
+        // check if user already had boosted
+        if (req.mews.boosters.indexOf(req.auth._id) !== -1) return res.status(200).json({ message: 'You already boosted once tho' })
+        const boostedmews = await Mews.findByIdAndUpdate(mews._id, { $push: { boosters: req.auth._id } }, { new: true, timestamps: false })
+        return res.status(200).json({ message: 'Boost success', mews: boostedmews })
+    } catch (error) {
+        return res.status(400).json({ message: 'Boost failed', error })
+    }
+}
+
+const unboost = async (req, res) => {
+    try {
+        const mews = req.mews
+        // check if user already had boosted
+        if (req.mews.boosters.indexOf(req.auth._id) === -1) return res.status(200).json({ message: 'You didn\'t even boosted tho' })
+        const unboostedmews = await Mews.findByIdAndUpdate(mews._id, { $pull: { boosters: req.auth._id } }, { new: true, timestamps: false })
+        return res.status(200).json({ message: 'Unboost success', mews: unboostedmews })
+    } catch (error) {
+        return res.status(400).json({ message: 'Unboost failed', error })
+    }
+}
+
+export default { list, create, mewsById, read, update, destroy, requiredOwnership, boost, unboost }

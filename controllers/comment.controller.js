@@ -9,8 +9,7 @@ const list = async (req, res) => {
         // sort by query keys and createdAt
         const commentlist = await Comment.find({ mews })
             .select('-updatedAt -__v')
-            .sort({ [sort]: order })
-            .sort({ createdAt: 1 })
+            .sort({ createdAt: 'asc', [sort]: order })
             .populate('submitter', '_id username')
         // filter direct comments only
         return res.status(200).json(commentlist.filter(c => !c.parent))
@@ -30,12 +29,8 @@ const create = async (req, res) => {
         const { body, mews, parent } = req.body
         const comment = await new Comment({ submitter, body, mews, parent })
         if (parent) {
-            // if there's parent, get parent comment obj
-            const parentComment = await Comment.findById(parent)
-            // push comment's "_id" onto parent's children array
-            parentComment.children.push(comment)
-            // save parent comment obj
-            await parentComment.save()
+            // remove from parent's children array
+            const parentComment = await Comment.findByIdAndUpdate(parent, { $push: { children: comment } }, { new: true, timestamps: false })
             // comment's ancestor is same as parent's, plus parent's parent
             if (parentComment.parent) {
                 // [great-great-grand, great-grand, grand]
@@ -55,8 +50,9 @@ const commentById = async (req, res, next, id) => {
     try {
         const comment = await Comment.findById(id)
             .populate('submitter', '_id username')
-            .select('-updatedAt -__v')
-        if (!comment) return res.status(404).json({ message: `Comment ${id} is empty` })
+            .select('-__v')
+        // returning 404 when comment is empty is WRONG, let client handle it
+        // if (!comment) return res.status(404).json({ message: `Comment ${id} is empty` })
         // attach to req obj
         req.comment = comment
         next()
@@ -91,6 +87,10 @@ const update = async (req, res) => {
 const destroy = async (req, res) => {
     try {
         const comment = req.comment
+        if (comment.parent) {
+            // error if pull "comment" and not "comment._id"
+            await Comment.findByIdAndUpdate(comment.parent, { $pull: { children: comment._id } }, { timestamps: false })
+        }
         await comment.remove()
         return res.status(200).json({ message: 'Comment deleted' })
     } catch (error) {
@@ -101,7 +101,7 @@ const destroy = async (req, res) => {
 const requiredOwnership = async (req, res, next) => {
     // requiredSignin --> req.auth._id
     // commentById --> req.comment
-    if (req.auth._id != req.comment.submitter) return res.status(401).json({ message: `You don't own this comment` })
+    if (req.auth._id != req.comment.submitter._id) return res.status(401).json({ message: `You don't own this comment` })
     next()
 }
 
