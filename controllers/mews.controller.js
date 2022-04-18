@@ -11,7 +11,7 @@ const list = async (req, res) => {
             daysago,
             rank
         } = req.query
-        // no "?daysago=Number" query --> all (createdAt exists)
+        // no "?daysago=Number" query --> all (createdAt exists, which means all)
         let createdAt = daysago
             ? { '$gte': new Date(new Date - daysago * 24 * 60 * 60 * 1000) }
             : { '$exists': true }
