@@ -41,7 +41,7 @@ UserSchema
     })
 
 UserSchema.path('hashed_password').validate(function (v) {
-    if (this.raw_password && this.raw_password.length < 6) this.invalidate('password', 'password should be longer than 6, no MUST')
+    if (this.raw_password && this.raw_password.length < 4) this.invalidate('password', 'password should be longer than 4, no MUST')
     if (this.isNew && !this.raw_password) this.invalidate('password', 'No password tho')
 }, null)
 

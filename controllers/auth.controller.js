@@ -14,7 +14,7 @@ const signin = async (req, res) => {
         // get user by provided username
         const user = await User.findOne({ username })
         // is user blank?
-        if (!user) return res.status(404).json({ message: `User not found` })
+        //if (!user) return res.status(404).json({ message: `User not found` })
         // check password match
         if (!user.authenticate(password)) return res.status(400).json({ message: 'No match' })
 
