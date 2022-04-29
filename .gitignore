@@ -4,4 +4,4 @@ node_modules
 db
 
 .env
-yarn.lock
+yarn-error.log
