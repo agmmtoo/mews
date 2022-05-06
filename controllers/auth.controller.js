@@ -55,10 +55,14 @@ const requiredAuthorization = async (req, res, next) => {
 }
 
 const requiredOwnership = async (req, res, next) => {
+	try {
     // requiredSignin --> req.auth._id
     // mewsById --> req.mews
     if (req.auth._id != req.mews.submitter._id) return res.status(401).json({ message: `you don't own this Mews` })
     next()
+	} catch (error) {
+		return res.status(400).json({message: 'Error occured checking ownership of Mews', error })
+	}
 }
 
 export default { signin, requiredSignin, requiredAuthorization, requiredOwnership }

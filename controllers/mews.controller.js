@@ -111,7 +111,7 @@ const update = async (req, res) => {
         updatedmews.body = body
 
         await updatedmews.save()
-        return res.status(202).json({ message: 'updated', updatedmews })
+        return res.status(202).json({ message: 'updated', mews: updatedmews })
     } catch (error) {
         return res.status(400).json({ message: 'update failed', error })
     }
@@ -129,7 +129,7 @@ const destroy = async (req, res) => {
 
         // reduce submitter/owner's karma //might be error !!!!!!!!!!
         await User.findByIdAndUpdate(req.mews.submitter, { $inc: { karma: -1 } }, { timestamps: false })
-        return res.status(200).json({ message: 'deleted' })
+        return res.status(200).json({ message: 'deleted', mews })
     } catch (error) {
         return res.status(400).json({ message: 'delete failed', error })
     }
