@@ -9,7 +9,8 @@ const list = async (req, res) => {
         let {
             parent = { '$exists': false },
             daysago,
-            rank
+            rank,
+		submitter = { '$exists': true }
         } = req.query
         // no "?daysago=Number" query --> all (createdAt exists, which means all)
         let createdAt = daysago
@@ -20,7 +21,7 @@ const list = async (req, res) => {
 
         const mewslist = await Mews
             // filter Mews with set conditions
-            .find({ parent, createdAt })
+            .find({ parent, createdAt, submitter })
             // sort by points
             .sort(sort)
             // sort by latest added

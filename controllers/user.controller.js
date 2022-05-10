@@ -30,7 +30,8 @@ const create = async (req, res) => {
 
 const userById = async (req, res, next, userId) => {
     try {
-        const user = await User.findById(userId)
+	//user = await User.findById(userId)
+	const user = await User.findOne({username: userId}).select('-hashed_password')
         if (!user) return res.status(404).json({ message: `User ${userId} not found` })
         req.user = user
         next()
