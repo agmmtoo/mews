@@ -23,6 +23,7 @@ app.use(helmet())
 app.use(compression())
 
 // routes
+app.use('/ping', (req, res) => res.send('pong'))
 app.use('/api/v1/mews', mewsRouter)
 app.use('/api/v1/users', userRouter)
 app.use('/api/v1/auth', authRouter)
