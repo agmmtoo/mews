@@ -5,7 +5,8 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "start": "nodemon",
+    "start": "node index.js",
+    "dev": "nodemon",
     "db": "mongod --dbpath db"
   },
   "dependencies": {
