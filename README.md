@@ -21,7 +21,7 @@ Express backend for Mews - mm news aggregration site.
 
 * install Mongo DB and run on url defined in `.env`
 * `yarn start`
-* Check out [mews-client](https://github.com/agmyintmyatoo/mews-client) React app for standard(?) forntend.
+* Check out [mews-client](https://github.com/agmyintmyatoo/mews-client) React app for standard(?) frontend.
 
 ## Notes regarding on `.env`
 
